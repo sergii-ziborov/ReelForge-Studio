@@ -1,0 +1,20 @@
+[package]
+name = "reelforge-studio"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.97"
+authors = ["Sergii Ziborov"]
+repository = "https://github.com/sergii-ziborov/ReelForge-Studio"
+homepage = "https://github.com/sergii-ziborov/ReelForge-Studio"
+description = "egui desktop for ReelForge-Host (no Electron)"
+readme = "../../README.md"
+
+[[bin]]
+name = "reelforge-studio"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.32", default-features = true }
+reelforge-studio-client = { path = "../reelforge-studio-client" }
+serde_json = "1"

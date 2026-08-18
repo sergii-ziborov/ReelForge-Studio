@@ -1,0 +1,23 @@
+[package]
+name = "reelforge-studio-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "mcport stdio MCP that proxies ReelForge-Host HTTP"
+readme = "../../README.md"
+
+[[bin]]
+name = "reelforge-studio-mcp"
+path = "src/main.rs"
+
+[dependencies]
+mcport = { path = "../../../mcport" }
+reelforge-studio-client = { path = "../reelforge-studio-client" }
+serde_json = "1"
+
+[lints]
+workspace = true

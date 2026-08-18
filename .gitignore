@@ -1,0 +1,7 @@
+/target
+**/*.rs.bk
+.idea
+.vscode
+web/node_modules
+web/dist
+*.pdb

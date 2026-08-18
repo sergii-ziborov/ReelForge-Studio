@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: studio
+      - name: checkout mcport sibling
+        uses: actions/checkout@v4
+        with:
+          repository: sergii-ziborov/mcport
+          path: mcport
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: studio
+      - name: fmt
+        run: cargo fmt --all -- --check
+      - name: clippy client+mcp
+        run: cargo clippy -p reelforge-studio-client -p reelforge-studio-mcp -- -D warnings
+      - name: test client
+        run: cargo test -p reelforge-studio-client
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio/web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: studio
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx tsc --noEmit
+      - run: npx vite build

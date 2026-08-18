@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/reelforge-studio-client",
+    "crates/reelforge-studio-mcp",
+]
+# `crates/reelforge-studio` (egui) is standalone — wgpu is optional and heavy.
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.97"
+authors = ["Sergii Ziborov"]
+repository = "https://github.com/sergii-ziborov/ReelForge-Studio"
+homepage = "https://github.com/sergii-ziborov/ReelForge-Studio"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

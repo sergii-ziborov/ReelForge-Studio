@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HostClient } from "./api";
+
+type Mode = "operator" | "capture" | "agent";
 
 export default function App() {
   const [host, setHost] = useState("http://127.0.0.1:8787");
@@ -8,9 +10,8 @@ export default function App() {
   const [photo, setPhoto] = useState("");
   const [output, setOutput] = useState("out.mp4");
   const [style, setStyle] = useState("pixelate");
-  const [log, setLog] = useState(
-    "Host must already be running: reelforge-host serve --http\nPaths are on the Host machine, not the browser.",
-  );
+  const [mode, setMode] = useState<Mode>("operator");
+  const [log, setLog] = useState("checking Host…");
   const [ok, setOk] = useState<boolean | null>(null);
 
   const client = () => new HostClient(host, token);
@@ -26,10 +27,15 @@ export default function App() {
     }
   }
 
+  useEffect(() => {
+    void ping();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function run() {
     if (!video.trim() || !photo.trim()) {
       setOk(false);
-      setLog("video and photo paths required");
+      setLog("video and photo paths required (on the Host machine)");
       return;
     }
     setLog("running privacy_except…");
@@ -48,12 +54,52 @@ export default function App() {
     }
   }
 
+  const videoHint =
+    mode === "capture"
+      ? "session dir, project.json, or capture:ses_…"
+      : "C:\\media\\scene.mp4";
+
   return (
     <main>
-      <h1>ReelForge Studio</h1>
-      <p className="muted">
-        React + Vite · no Electron · same Host HTTP as the egui desktop
+      <header>
+        <div>
+          <h1>ReelForge Studio</h1>
+          <p className="muted">
+            Control panel for Host. Not a detector. Not Electron.
+          </p>
+        </div>
+        <span className={ok === true ? "chip ok" : ok === false ? "chip err" : "chip"}>
+          {ok === true ? "Host up" : ok === false ? "Host down" : "…"}
+        </span>
+      </header>
+
+      <div className="modes">
+        {(
+          [
+            ["operator", "Operator"],
+            ["capture", "Capture"],
+            ["agent", "Agent"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={mode === id ? "tab on" : "tab"}
+            onClick={() => setMode(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="hint">
+        {mode === "operator" &&
+          "Video + photo of the person to keep sharp. Photo search must Accept or Host stops."}
+        {mode === "capture" &&
+          "Pass a Capture session or project — Host will not glob the unfinished tail."}
+        {mode === "agent" &&
+          "Agents should call Host MCP (serve / serve --http), not this page. Same tools: privacy_except."}
       </p>
+
       <label>
         Host
         <input value={host} onChange={(e) => setHost(e.target.value)} />
@@ -64,6 +110,7 @@ export default function App() {
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
+          placeholder="empty on loopback"
         />
       </label>
       <label>
@@ -71,7 +118,7 @@ export default function App() {
         <input
           value={video}
           onChange={(e) => setVideo(e.target.value)}
-          placeholder="C:\\media\\scene.mp4"
+          placeholder={videoHint}
         />
       </label>
       <label>
@@ -89,8 +136,8 @@ export default function App() {
       <label>
         Style
         <select value={style} onChange={(e) => setStyle(e.target.value)}>
-          <option value="pixelate">pixelate</option>
-          <option value="gaussian">gaussian</option>
+          <option value="pixelate">pixelate (anonymity default)</option>
+          <option value="gaussian">gaussian (recoverable)</option>
           <option value="solid">solid</option>
         </select>
       </label>
@@ -98,10 +145,9 @@ export default function App() {
         <button type="button" onClick={() => void ping()}>
           Ping Host
         </button>
-        <button type="button" onClick={() => void run()}>
+        <button type="button" className="primary" onClick={() => void run()}>
           Privacy except
         </button>
-        {ok !== null && <span className={ok ? "ok" : "err"}>{ok ? "ok" : "error"}</span>}
       </div>
       <pre>{log}</pre>
     </main>

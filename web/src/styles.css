@@ -7,30 +7,76 @@ body {
   margin: 0;
 }
 main {
-  max-width: 640px;
-  margin: 2rem auto;
+  max-width: 560px;
+  margin: 1.4rem auto 2rem;
   padding: 0 1rem;
 }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
 h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-size: 1.35rem;
 }
 .muted {
   color: #9aa0a6;
-  margin-top: 0;
+  margin: 0;
+  font-size: 0.88rem;
+}
+.chip {
+  flex: none;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #3c4043;
+  font-size: 0.78rem;
+}
+.chip.ok {
+  color: #81c995;
+  border-color: #3d6b4f;
+}
+.chip.err {
+  color: #f28b82;
+  border-color: #8b3a34;
+}
+.modes {
+  display: flex;
+  gap: 0.35rem;
+  margin: 1rem 0 0.4rem;
+}
+.tab {
+  background: #1e2128;
+  border: 1px solid #3c4043;
+}
+.tab.on {
+  background: #2b5cff;
+  border-color: #2b5cff;
+}
+.hint {
+  color: #9aa0a6;
+  font-size: 0.82rem;
+  margin: 0 0 0.8rem;
+  line-height: 1.35;
 }
 label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.6rem 0;
-  font-size: 0.85rem;
+  gap: 0.22rem;
+  margin: 0.45rem 0;
+  font-size: 0.82rem;
+}
+input,
+select,
+button,
+pre {
+  font: inherit;
 }
 input,
 select,
 button {
-  font: inherit;
-  padding: 0.45rem 0.55rem;
+  padding: 0.4rem 0.55rem;
   border-radius: 6px;
   border: 1px solid #3c4043;
   background: #1e2128;
@@ -38,25 +84,22 @@ button {
 }
 .row {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.55rem;
   align-items: center;
-  margin: 1rem 0;
+  margin: 0.85rem 0;
 }
 button {
   cursor: pointer;
+}
+.primary {
   background: #2b5cff;
   border-color: #2b5cff;
 }
-.ok {
-  color: #81c995;
-}
-.err {
-  color: #f28b82;
-}
 pre {
   background: #0c0e12;
-  padding: 0.8rem;
+  padding: 0.7rem;
   overflow: auto;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  min-height: 4rem;
 }

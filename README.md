@@ -29,6 +29,10 @@ Host already speaks MCP. Studio only drives it.
 
 One client crate (`reelforge-studio-client`) is the contract. Both GUIs and the mcport shim call it.
 
+**Public on purpose.** No weights, no customer video, no secret API. Hide this repo only if billing/tenants land here.
+
+Agents: talk to **Host MCP**, not a new catalog. See [AGENTS.md](AGENTS.md) and Host [docs/USE-CASES.md](https://github.com/sergii-ziborov/ReelForge-Host/blob/main/docs/USE-CASES.md). There is no ReelForge LSP — MCP is the agent protocol.
+
 ## Why not Electron / why not put UI in Host
 
 - Host owns ffmpeg + ONNX. A webview would drag that into the renderer.

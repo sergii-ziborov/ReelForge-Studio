@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "reelforge-host": {
+      "command": "reelforge-host",
+      "args": ["serve"]
+    },
+    "reelforge-studio": {
+      "command": "reelforge-studio-mcp",
+      "env": {
+        "REELFORGE_HOST": "http://127.0.0.1:8787"
+      }
+    }
+  }
+}

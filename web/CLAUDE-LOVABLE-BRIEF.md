@@ -2,8 +2,14 @@
 
 Redesign `web/` so it looks like a **Lovable-quality** product UI, not an engineer form.
 
-You cannot log into lovable.dev from this session. Do the Lovable *output*:
-React + Vite + Tailwind + taste. Then we keep the files in this repo.
+Official Lovable MCP is configured on this machine (`lovable` → https://mcp.lovable.dev).
+
+Live project (created 2026-08-18, 4.5 credits):
+- editor: https://lovable.dev/projects/2205c188-a11f-4c4e-b466-242b09565a59
+- preview: https://id-preview--2205c188-a11f-4c4e-b466-242b09565a59.lovable.app
+- workspace: KKJdFYlaQ3i2DWWu5Qcb (Sergii's Lovable, pro)
+
+Port generated UI into `web/` and keep the HostClient contract. Do not deploy. Do not enable Lovable Cloud.
 
 ## Product
 

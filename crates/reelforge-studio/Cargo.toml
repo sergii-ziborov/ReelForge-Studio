@@ -1,3 +1,7 @@
+# Standalone workspace: the parent virtual workspace must not claim this crate
+# (eframe / wgpu stay out of the light client+mcp CI).
+[workspace]
+
 [package]
 name = "reelforge-studio"
 version = "0.1.0"

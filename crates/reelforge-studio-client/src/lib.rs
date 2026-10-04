@@ -39,6 +39,15 @@ pub type Result<T> = std::result::Result<T, ClientError>;
 /// Default Host HTTP bind.
 pub const DEFAULT_HOST: &str = "http://127.0.0.1:8787";
 
+/// URL scheme. Only plain HTTP is dialed; HTTPS is rejected before connect.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UrlScheme {
+    /// `http://` or a scheme-less `host:port`.
+    Http,
+    /// `https://`. `exchange` refuses this before connect.
+    Https,
+}
+
 /// Host HTTP MCP client.
 #[derive(Debug, Clone)]
 pub struct HostClient {
@@ -48,6 +57,10 @@ pub struct HostClient {
     pub token: Option<String>,
     /// Read/write timeout.
     pub timeout: Duration,
+    /// Parsed scheme. `Https` never opens a socket.
+    scheme: UrlScheme,
+    /// Construction failure returned by every request (unsupported scheme).
+    pending_error: Option<String>,
 }
 
 impl Default for HostClient {
@@ -58,22 +71,42 @@ impl Default for HostClient {
 
 impl HostClient {
     /// Parse `http://127.0.0.1:8787` or `127.0.0.1:8787`.
+    ///
+    /// `https://` is remembered and rejected by [`Self::health`] / RPC before
+    /// any socket opens. This client does not speak TLS, so it must not send
+    /// the bearer token in cleartext. `from_url` stays infallible; the error
+    /// is returned on the next request. [`Self::from_env`] uses the same path.
     #[must_use]
     pub fn from_url(url: &str, token: Option<String>) -> Self {
-        let host = url
-            .trim()
-            .trim_start_matches("http://")
-            .trim_start_matches("https://")
-            .trim_end_matches('/')
-            .to_owned();
+        let trimmed = url.trim();
+        let (scheme, rest, pending_error) = if let Some(rest) =
+            strip_ascii_prefix(trimmed, "https://")
+        {
+            (
+                    UrlScheme::Https,
+                    rest,
+                    Some(
+                        "https is not supported by this client; TLS is not implemented and the bearer token will not be sent"
+                            .to_owned(),
+                    ),
+                )
+        } else if let Some(rest) = strip_ascii_prefix(trimmed, "http://") {
+            (UrlScheme::Http, rest, None)
+        } else {
+            (UrlScheme::Http, trimmed, None)
+        };
         Self {
-            host,
+            host: rest.trim_end_matches('/').to_owned(),
             token: token.filter(|t| !t.trim().is_empty()),
             timeout: Duration::from_mins(10),
+            scheme,
+            pending_error,
         }
     }
 
     /// From `REELFORGE_HOST` / `REELFORGE_HOST_TOKEN`.
+    ///
+    /// An `https://` host is rejected on the next request (no TCP connect).
     #[must_use]
     pub fn from_env() -> Self {
         let url = std::env::var("REELFORGE_HOST").unwrap_or_else(|_| DEFAULT_HOST.into());
@@ -182,6 +215,17 @@ impl HostClient {
     }
 
     fn exchange(&self, method: &str, path: &str, body: Option<&str>) -> Result<(u16, String)> {
+        // Scheme is checked before any socket so an https URL cannot leak the token.
+        if self.scheme == UrlScheme::Https {
+            return Err(ClientError::message(
+                self.pending_error.clone().unwrap_or_else(|| {
+                    "https is not supported by this client; TLS is not implemented".to_owned()
+                }),
+            ));
+        }
+        if let Some(err) = &self.pending_error {
+            return Err(ClientError::message(err.clone()));
+        }
         let mut stream = TcpStream::connect(&self.host)
             .map_err(|e| ClientError::message(format!("connect {}: {e}", self.host)))?;
         stream
@@ -217,6 +261,18 @@ impl HostClient {
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
         Ok((status, rest.to_owned()))
+    }
+}
+
+/// Strip `prefix` (ASCII, case-insensitive) when it sits on a char boundary.
+fn strip_ascii_prefix<'a>(url: &'a str, prefix: &str) -> Option<&'a str> {
+    if url.len() >= prefix.len()
+        && url.is_char_boundary(prefix.len())
+        && url[..prefix.len()].eq_ignore_ascii_case(prefix)
+    {
+        Some(&url[prefix.len()..])
+    } else {
+        None
     }
 }
 
@@ -288,11 +344,8 @@ mod tests {
     #[test]
     fn health_and_privacy_except() {
         let (host, _h) = spawn_ok();
-        let c = HostClient {
-            host,
-            token: None,
-            timeout: Duration::from_secs(2),
-        };
+        let mut c = HostClient::from_url(&format!("http://{host}"), None);
+        c.timeout = Duration::from_secs(2);
         let health = c.health().unwrap();
         assert!(health.ok);
         assert!(c.tools().unwrap().contains(&"privacy_except".into()));
@@ -306,5 +359,67 @@ mod tests {
             })
             .unwrap();
         assert_eq!(out["subject_id"], 1);
+    }
+
+    #[test]
+    fn https_health_errors_without_connecting() {
+        let err = HostClient::from_url("https://127.0.0.1:9", Some("secret-token".into()))
+            .health()
+            .unwrap_err();
+        let text = err.to_string();
+        assert!(
+            text.to_ascii_lowercase().contains("https") || text.contains("TLS"),
+            "{text}"
+        );
+        assert!(!text.contains("secret-token"), "{text}");
+    }
+
+    #[test]
+    fn https_does_not_open_a_socket() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (tx, rx) = std::sync::mpsc::channel();
+        thread::spawn(move || {
+            listener.set_nonblocking(true).unwrap();
+            let start = std::time::Instant::now();
+            let mut accepted = false;
+            let mut nbytes = 0_usize;
+            while start.elapsed() < Duration::from_millis(200) {
+                match listener.accept() {
+                    Ok((mut stream, _)) => {
+                        accepted = true;
+                        let _ = stream.set_read_timeout(Some(Duration::from_millis(50)));
+                        let mut buf = [0_u8; 2048];
+                        nbytes += stream.read(&mut buf).unwrap_or(0);
+                        break;
+                    }
+                    Err(err)
+                        if matches!(
+                            err.kind(),
+                            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                        ) =>
+                    {
+                        thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(_) => break,
+                }
+            }
+            let _ = tx.send((accepted, nbytes));
+        });
+        thread::sleep(Duration::from_millis(20));
+        let mut client = HostClient::from_url(
+            &format!("https://127.0.0.1:{port}"),
+            Some("secret-token".into()),
+        );
+        client.timeout = Duration::from_millis(150);
+        let err = client.health().unwrap_err();
+        let text = err.to_string();
+        assert!(
+            text.to_ascii_lowercase().contains("https") || text.contains("TLS"),
+            "{text}"
+        );
+        let (accepted, nbytes) = rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(!accepted, "https client opened a TCP connection");
+        assert_eq!(nbytes, 0, "https client sent bytes");
     }
 }

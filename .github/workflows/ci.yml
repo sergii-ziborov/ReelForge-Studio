@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: sergii-ziborov/mcport
+          ref: c94145a6835a1a27b3e9ee41da9da99a3092f7a0
           path: mcport
       - uses: dtolnay/rust-toolchain@stable
         with:

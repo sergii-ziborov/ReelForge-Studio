@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { HostClient } from "./api";
 import { HelpRail } from "./HelpRail";
+import { MoviePanel } from "./MoviePanel";
 import {
   ERROR_COPY,
   MODES,
@@ -35,8 +36,10 @@ const MODE_HINTS: Record<Mode, { video: string; photo: string; output: string }>
 };
 
 export default function App() {
+  const [view, setView] = useState<"movie" | "privacy">("movie");
   const [mode, setMode] = useState<Mode>("operator");
-  const [host, setHost] = useState("http://127.0.0.1:8787");
+  const [host, setHost] = useState(() => localStorage.getItem("reelforge-host") ?? "http://127.0.0.1:8787");
+  useEffect(() => { localStorage.setItem("reelforge-host", host); }, [host]);
   const [token, setToken] = useState("");
   const [video, setVideo] = useState("");
   const [photo, setPhoto] = useState("");
@@ -128,6 +131,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background">
+      <nav className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-5 px-6 pt-6 lg:px-10" aria-label="Режим работы">
+        <button className={view === "movie" ? "font-semibold text-primary" : "text-muted-foreground"} onClick={() => setView("movie")}>Создать видео</button>
+        <button className={view === "privacy" ? "font-semibold text-primary" : "text-muted-foreground"} onClick={() => setView("privacy")}>Обработать существующее</button>
+        <label className="ml-auto text-sm">Адрес приложения <input aria-label="Адрес приложения" className="ml-2 rounded border bg-background p-2" value={host} onChange={e => setHost(e.target.value)} /></label>
+        <details><summary className="text-sm">Подключение</summary><input aria-label="Ключ подключения" type="password" placeholder="Ключ доступа" value={token} onChange={e => setToken(e.target.value)} className="mt-2 rounded border bg-background p-2" /></details>
+      </nav>
+      {view === "movie" && <MoviePanel host={host} token={token} />}
+      <div hidden={view !== "privacy"}>
       <div className="hairline-grid border-b border-border">
         <header className="mx-auto flex max-w-[1240px] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-14">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -351,6 +362,7 @@ export default function App() {
           ReelForge Studio · control panel only · nothing leaves your machine
         </p>
       </footer>
+      </div>
     </div>
   );
 }

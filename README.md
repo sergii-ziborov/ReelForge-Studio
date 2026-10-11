@@ -1,6 +1,25 @@
 # ReelForge Studio
 
-Control surfaces for [ReelForge-Host](https://github.com/sergii-ziborov/ReelForge-Host). **Not** a vision engine, **not** a compiler, **not** Electron.
+Control surfaces for [ReelForge-Host](https://github.com/sergii-ziborov/ReelForge-Host).
+
+The browser opens on **Видео по описанию**. Enter a prompt, duration and
+per-video image limit; Host plans, requests missing images through Codex CLI,
+animates separate objects, adds sound and checks the exported movie. Studio
+shows progress and plays/downloads the qualified result.
+
+Open a saved project by its id to recover it after restarting the browser.
+Revise it with another prompt or rebuild the saved scene using accepted files.
+The revision shown in Studio is passed back to Host, which rejects stale edits.
+The dependency details show the actual saved graph and affected nodes.
+
+The mcport MCP surface imports the running Host's tool names, descriptions and
+schemas. Reconnect it after changing the Host catalog. Host errors remain tool
+errors. All production state, provider calls and execution belong to Host.
+
+The existing-media privacy flow remains available under **Обработать существующее**.
+The movie view is currently implemented in the browser; egui retains its
+existing-media controls. See Host's README for the implemented motion profile,
+CLI receipt support and dependencies.
 
 ```text
   human / browser / agent

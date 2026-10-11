@@ -155,6 +155,18 @@ impl HostClient {
             .unwrap_or_default())
     }
 
+    /// Fetch the Host-owned catalog, including schemas, for a forwarding MCP.
+    ///
+    /// # Errors
+    /// Transport, RPC, or a malformed Host catalog.
+    pub fn tool_catalog(&self) -> Result<Vec<Value>> {
+        let value = self.rpc("tools/list", &json!({}))?;
+        value["tools"]
+            .as_array()
+            .cloned()
+            .ok_or_else(|| ClientError::message("Host catalog missing tools"))
+    }
+
     /// `tools/call` with structured result when present.
     ///
     /// # Errors
@@ -165,6 +177,13 @@ impl HostClient {
             "tools/call",
             &json!({ "name": name, "arguments": arguments }),
         )?;
+        if v["isError"].as_bool() == Some(true) {
+            return Err(ClientError::message(
+                v["content"][0]["text"]
+                    .as_str()
+                    .unwrap_or("Host tool failed"),
+            ));
+        }
         if let Some(sc) = v.get("structuredContent") {
             return Ok(sc.clone());
         }

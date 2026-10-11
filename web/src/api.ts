@@ -50,4 +50,12 @@ export class HostClient {
     })) as { structuredContent?: unknown };
     return result.structuredContent ?? result;
   }
+
+  async call(name: string, args: unknown): Promise<unknown> {
+    const result = (await this.rpc("tools/call", { name, arguments: args })) as {
+      structuredContent?: unknown; isError?: boolean; content?: { text?: string }[];
+    };
+    if (result.isError) throw new Error(result.content?.[0]?.text ?? "Сборка не выполнена");
+    return result.structuredContent ?? result;
+  }
 }
